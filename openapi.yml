@@ -1,0 +1,524 @@
+openapi: 3.0.3
+info:
+  title: Resourcery API
+  description: API documentation for the Resourcery community resource booking system.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Spring Boot — Auth Service
+  - url: http://localhost:8081
+    description: PHP — Resources Service
+  - url: http://localhost:8082
+    description: Django — Bookings & Notifications Service
+
+tags:
+  - name: Auth
+    description: User authentication and member management (Spring Boot :8080)
+  - name: Resources
+    description: Community resource CRUD (PHP :8081)
+  - name: Bookings
+    description: Booking lifecycle management (Django :8082)
+  - name: Notifications
+    description: In-app notifications (Django :8082)
+
+# ── AUTH ENDPOINTS (Spring Boot) ──────────────────────────────────────────────
+paths:
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: Login successful, JWT cookie set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Invalid credentials
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Self-register a new resident account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: Account created, JWT cookie set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Username taken or invalid
+
+  /api/auth/admin/create-member:
+    post:
+      tags: [Auth]
+      summary: Admin creates a member account (no session change)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: Member created
+        '400':
+          description: Username taken or invalid
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Log out (clears JWT cookie)
+      responses:
+        '200':
+          description: Logged out
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current session user
+      responses:
+        '200':
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Not authenticated
+
+  /api/auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, currentPassword, newPassword]
+              properties:
+                username: { type: string }
+                currentPassword: { type: string }
+                newPassword: { type: string }
+      responses:
+        '200':
+          description: Password updated
+        '401':
+          description: Wrong current password
+
+  /api/auth/members:
+    get:
+      tags: [Auth]
+      summary: List all members (admin only)
+      responses:
+        '200':
+          description: List of members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemberResponse'
+
+  /api/auth/members/{id}:
+    delete:
+      tags: [Auth]
+      summary: Delete a member (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Member deleted
+        '404':
+          description: Not found
+
+# ── RESOURCE ENDPOINTS (PHP) ──────────────────────────────────────────────────
+  /resources:
+    get:
+      tags: [Resources]
+      summary: List all resources
+      responses:
+        '200':
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Resource'
+    post:
+      tags: [Resources]
+      summary: Create a resource (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceInput'
+      responses:
+        '201':
+          description: Resource created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+
+  /resources/{id}:
+    get:
+      tags: [Resources]
+      summary: Get a single resource
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Resource found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+        '404':
+          description: Not found
+    put:
+      tags: [Resources]
+      summary: Update a resource (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceInput'
+      responses:
+        '200':
+          description: Resource updated
+    delete:
+      tags: [Resources]
+      summary: Delete a resource (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Resource deleted
+
+# ── BOOKING ENDPOINTS (Django) ────────────────────────────────────────────────
+  /bookings:
+    post:
+      tags: [Bookings]
+      summary: Create a booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingInput'
+      responses:
+        '201':
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '200':
+          description: Existing pending booking updated (merged)
+        '409':
+          description: Conflict — dates taken or extension prompt
+
+  /bookings/my:
+    get:
+      tags: [Bookings]
+      summary: Get current user's bookings
+      responses:
+        '200':
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+
+  /bookings/resources:
+    get:
+      tags: [Bookings]
+      summary: Get active bookings per resource (for booked dates display)
+      responses:
+        '200':
+          description: Active bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+
+  /bookings/all:
+    get:
+      tags: [Bookings]
+      summary: Get all bookings (admin only)
+      responses:
+        '200':
+          description: All bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+
+  /bookings/{id}/status:
+    patch:
+      tags: [Bookings]
+      summary: Update booking status (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [for_pickup, declined, not_returned, returned, pending]
+      responses:
+        '200':
+          description: Status updated
+        '409':
+          description: Conflict — dates already booked by another user
+
+  /bookings/{id}/extend:
+    patch:
+      tags: [Bookings]
+      summary: Extend or update an approved/not-returned booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [merged_start, merged_end]
+              properties:
+                merged_start: { type: string, format: date }
+                merged_end: { type: string, format: date }
+                is_extension: { type: boolean }
+      responses:
+        '200':
+          description: Booking updated, reset to pending
+
+  /bookings/{id}/cancel:
+    patch:
+      tags: [Bookings]
+      summary: Cancel a pending or for-pickup booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Booking cancelled
+
+  /bookings/{id}/cancel-extension:
+    patch:
+      tags: [Bookings]
+      summary: Cancel a pending extension, revert to not_returned
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Extension cancelled, booking reverted
+
+  /bookings/user/{username}:
+    delete:
+      tags: [Bookings]
+      summary: Delete all active bookings for a member (admin only)
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Bookings removed
+
+# ── NOTIFICATION ENDPOINTS (Django) ──────────────────────────────────────────
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Get notifications for current user
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+
+  /notifications/read:
+    patch:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      responses:
+        '200':
+          description: Marked as read
+
+  /notifications/clear:
+    delete:
+      tags: [Notifications]
+      summary: Delete all notifications for current user
+      responses:
+        '200':
+          description: Cleared
+
+# ── SCHEMAS ───────────────────────────────────────────────────────────────────
+components:
+  schemas:
+    UserResponse:
+      type: object
+      properties:
+        username: { type: string }
+        role: { type: string, enum: [ROLE_USER, ROLE_ADMIN] }
+        email: { type: string }
+
+    MemberResponse:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        email: { type: string }
+        role: { type: string }
+
+    RegisterRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 6 }
+        role: { type: string, enum: [ROLE_USER, ROLE_ADMIN], default: ROLE_USER }
+
+    Resource:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        type: { type: string, enum: [Vehicle, Equipment, Venue, Electronics, Sports, Other] }
+        description: { type: string, nullable: true }
+        quantity: { type: integer, default: 1 }
+        status: { type: string, enum: [available, under maintenance] }
+        created_at: { type: string, format: date-time }
+
+    ResourceInput:
+      type: object
+      required: [name, type]
+      properties:
+        name: { type: string }
+        type: { type: string }
+        description: { type: string, nullable: true }
+        quantity: { type: integer, default: 1 }
+        status: { type: string, enum: [available, under maintenance] }
+
+    Booking:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        resource_id: { type: integer }
+        resource_name: { type: string }
+        resource_type: { type: string }
+        date: { type: string, format: date }
+        return_date: { type: string, format: date, nullable: true }
+        time: { type: string, format: time }
+        end_time: { type: string, format: time, nullable: true }
+        quantity_requested: { type: integer, default: 1 }
+        status:
+          type: string
+          enum: [pending, for_pickup, not_returned, returned, declined, cancelled, no_pickup]
+        is_extension: { type: boolean }
+        is_update: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    BookingInput:
+      type: object
+      required: [resource_id, resource_name, date, time]
+      properties:
+        resource_id: { type: integer }
+        resource_name: { type: string }
+        resource_type: { type: string }
+        date: { type: string, format: date }
+        return_date: { type: string, format: date, nullable: true }
+        time: { type: string, format: time }
+        end_time: { type: string, format: time, nullable: true }
+        quantity_requested: { type: integer, default: 1 }
+
+    Notification:
+      type: object
+      properties:
+        id: { type: integer }
+        type:
+          type: string
+          enum:
+            - new_booking
+            - booking_update
+            - booking_extension
+            - booking_approved
+            - booking_declined
+            - booking_cancelled
+            - booking_picked_up
+            - booking_no_pickup
+            - booking_reminder
+        booking_id: { type: integer }
+        resource_name: { type: string }
+        username: { type: string }
+        date: { type: string }
+        is_read: { type: boolean }
+        created_at: { type: string, format: date-time }

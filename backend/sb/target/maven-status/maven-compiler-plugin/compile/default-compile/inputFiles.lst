@@ -1,0 +1,11 @@
+/app/src/main/java/com/resourcery/auth/controller/AuthController.java
+/app/src/main/java/com/resourcery/auth/dto/SignupRequest.java
+/app/src/main/java/com/resourcery/auth/security/SecurityConfig.java
+/app/src/main/java/com/resourcery/auth/model/User.java
+/app/src/main/java/com/resourcery/auth/security/JwtAuthenticationFilter.java
+/app/src/main/java/com/resourcery/auth/dto/LoginRequest.java
+/app/src/main/java/com/resourcery/auth/dto/JwtResponse.java
+/app/src/main/java/com/resourcery/auth/security/JwtUtils.java
+/app/src/main/java/com/resourcery/auth/security/CustomUserDetailsService.java
+/app/src/main/java/com/resourcery/auth/ResourceryAuthApplication.java
+/app/src/main/java/com/resourcery/auth/repository/UserRepository.java

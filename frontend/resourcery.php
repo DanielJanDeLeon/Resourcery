@@ -141,6 +141,19 @@ if (isset($_POST['action']) && $_POST['action'] == "delete_resource") {
     header("Location: resourcery.php?page=resources&msg=" . urlencode("Resource deleted.")); exit();
 }
 
+// Delete Member (admin only)
+if (isset($_POST['action']) && $_POST['action'] == "delete_member") {
+    if (!isset($_SESSION['user_id'])) { header("Location: resourcery.php?page=login"); exit(); }
+    if (!is_admin()) { header("Location: resourcery.php?page=dashboard"); exit(); }
+    $dmid = (int)$_POST['member_id'];
+    if ($dmid === (int)$_SESSION['user_id']) {
+        header("Location: resourcery.php?page=members&msg=" . urlencode("You cannot delete your own account.")); exit();
+    }
+    $dm = $conn->prepare("DELETE FROM users WHERE id=?");
+    $dm->bind_param("i", $dmid); $dm->execute();
+    header("Location: resourcery.php?page=members&msg=" . urlencode("Member deleted.")); exit();
+}
+
 // Fetch data
 $profile_data = null; $members = []; $resources = []; $bookings = [];
 $total_resources = 0; $pending_bookings = 0;
@@ -372,11 +385,6 @@ $is_dash = in_array($page, $dash_pages);
 
         <?php elseif ($page == 'resources'): ?>
         <div class="content-section" style="padding-top:32px;">
-            <?php if (isset($_GET['msg'])): ?>
-            <div class="page-message <?php echo (isset($_GET['err']) && $_GET['err']=='0') ? 'success' : ''; ?>" style="margin-bottom:20px;">
-                <?php echo htmlspecialchars($_GET['msg']); ?>
-            </div>
-            <?php endif; ?>
             <div class="section-header">
                 <h2 class="section-title">All Resources (<?php echo $total_resources; ?>)</h2>
                 <?php if (is_admin()): ?>
@@ -568,16 +576,29 @@ $is_dash = in_array($page, $dash_pages);
             </div>
             <div class="activity-card">
                 <table class="members-table" id="membersTable">
-                    <thead><tr><th>#</th><th>Full Name</th><th>Email</th><th>Role</th></tr></thead>
+                    <thead><tr><th>#</th><th>Full Name</th><th>Email</th><th>Role</th><?php if (is_admin()): ?><th>Action</th><?php endif; ?></tr></thead>
                     <tbody id="membersBody">
                         <?php if (empty($members)): ?>
-                        <tr><td colspan="4" style="text-align:center;color:#8b92c4;padding:32px;">No members found.</td></tr>
+                        <tr><td colspan="5" style="text-align:center;color:#8b92c4;padding:32px;">No members found.</td></tr>
                         <?php else: foreach ($members as $i => $m): ?>
                         <tr data-search="<?php echo strtolower(htmlspecialchars($m['fullname'] . ' ' . $m['email'])); ?>">
                             <td><?php echo $i + 1; ?></td>
                             <td><?php echo htmlspecialchars($m['fullname']); ?></td>
                             <td><?php echo htmlspecialchars($m['email']); ?></td>
                             <td><span class="role-badge role-<?php echo $m['role']; ?>"><?php echo ucfirst($m['role']); ?></span></td>
+                            <?php if (is_admin()): ?>
+                            <td>
+                                <?php if ($m['id'] != $_SESSION['user_id']): ?>
+                                <form method="POST" action="resourcery.php" style="display:inline;" onsubmit="return confirm('Delete this member?')">
+                                    <input type="hidden" name="action" value="delete_member">
+                                    <input type="hidden" name="member_id" value="<?php echo $m['id']; ?>">
+                                    <button type="submit" class="btn-delete">Delete</button>
+                                </form>
+                                <?php else: ?>
+                                <span style="color:#d1d5db;font-size:13px;">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <?php endif; ?>
                         </tr>
                         <?php endforeach; endif; ?>
                     </tbody>

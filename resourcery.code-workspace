@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{ "name": "Auth Service (Spring Boot)", "path": "backend/sb" },
+		{ "name": "Resources API (PHP)",        "path": "backend/php" },
+		{ "name": "Bookings API (Django)",       "path": "backend/django" },
+		{ "name": "Frontend (React)",            "path": "react" }
+	],
+	"settings": {
+		"java.configuration.updateBuildConfiguration": "interactive"
+	}
+}
