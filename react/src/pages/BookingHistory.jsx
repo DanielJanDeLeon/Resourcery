@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { Loader2, History, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Loader2, History, Search, Download } from 'lucide-react';
 import Layout from '../layout/Layout';
 import djangoApi from '../config/djangoApi';
 
 const STATUS_STYLES = {
-  returned:   'bg-green-100 text-green-700',
-  declined:   'bg-red-100 text-red-700',
-  cancelled:  'bg-gray-100 text-gray-500',
-  no_pickup:  'bg-red-100 text-red-700',
+  returned:  'bg-green-100 text-green-700',
+  declined:  'bg-red-100 text-red-700',
+  cancelled: 'bg-gray-100 text-gray-500',
+  no_pickup: 'bg-red-100 text-red-700',
 };
 
 const STATUS_LABELS = {
-  returned:   'Returned',
-  declined:   'Declined',
-  cancelled:  'Cancelled',
-  no_pickup:  'No Pick Up',
+  returned:  'Returned',
+  declined:  'Declined',
+  cancelled: 'Cancelled',
+  no_pickup: 'No Pick Up',
 };
 
 const HISTORY_STATUSES = ['returned', 'declined', 'cancelled', 'no_pickup'];
@@ -40,6 +40,25 @@ const BookingHistory = () => {
     return matchSearch && matchStatus;
   });
 
+  const downloadCSV = () => {
+    const headers = ['#', 'Resource', 'Member', 'Date', 'Status'];
+    const rows = filtered.map(b => [
+      b.id,
+      b.resource_name,
+      b.username,
+      b.return_date ? `${b.date} - ${b.return_date}` : b.date,
+      STATUS_LABELS[b.status] || b.status,
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `booking-history-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Layout title="Booking History" subtitle="Completed and declined bookings">
       {loading && (
@@ -52,7 +71,6 @@ const BookingHistory = () => {
       )}
       {!loading && !error && (
         <>
-          {/* Filters */}
           <div className="flex gap-3 mb-5 flex-wrap">
             <div className="relative flex-1 min-w-48">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -67,6 +85,13 @@ const BookingHistory = () => {
                 <option key={s} value={s}>{STATUS_LABELS[s]}</option>
               ))}
             </select>
+            {filtered.length > 0 && (
+              <button onClick={downloadCSV}
+                className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white rounded-xl hover:opacity-90 transition-all"
+                style={{ background: 'linear-gradient(135deg,#667eea,#764ba2)' }}>
+                <Download className="w-4 h-4" /> Download CSV
+              </button>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl shadow-md overflow-hidden">

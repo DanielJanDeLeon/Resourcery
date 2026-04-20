@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, X, CalendarDays } from 'lucide-react';
+import { Loader2, X, CalendarDays, Download } from 'lucide-react';
 import Layout from '../layout/Layout';
 import djangoApi from '../config/djangoApi';
 import { useAuth } from '../hooks/useAuth';
@@ -194,6 +194,23 @@ const AllBookings = () => {
     }
   };
 
+  const downloadCSV = (bookingList, filename) => {
+    const headers = ['Resource', 'Date', 'Status'];
+    const rows = bookingList.map(b => [
+      b.resource_name,
+      b.return_date ? `${b.date} - ${b.return_date}` : b.date,
+      statusLabel(b.status),
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Layout title="My Bookings" subtitle="Your current active bookings">
       {loading && (
@@ -226,9 +243,18 @@ const AllBookings = () => {
           <div className="bg-white rounded-2xl shadow-md overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-bold text-gray-800">Booking History</h2>
-              <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
-                {history.length} total
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+                  {history.length} total
+                </span>
+                {history.length > 0 && (
+                  <button onClick={() => downloadCSV(history, 'my-booking-history')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white rounded-lg hover:opacity-90 transition-all"
+                    style={{ background: 'linear-gradient(135deg,#667eea,#764ba2)' }}>
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </button>
+                )}
+              </div>
             </div>
             <BookingTable bookings={history} emptyMsg="No booking history yet." showId={isAdmin} />
           </div>
