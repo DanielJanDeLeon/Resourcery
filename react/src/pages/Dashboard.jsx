@@ -20,7 +20,7 @@ const ViewAllBtn = ({ to }) => (
 );
 
 const StatCard = ({ icon: Icon, iconBg, value, label }) => (
-  <div className="bg-white rounded-2xl shadow-md p-6 flex items-center gap-5">
+  <div className="sa bg-white rounded-2xl shadow-md p-6 flex items-center gap-5 hover-lift">
     <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white flex-shrink-0" style={{ background: iconBg }}>
       <Icon className="w-7 h-7" />
     </div>
@@ -80,7 +80,7 @@ const BookingChart = ({ bookings }) => {
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-md p-6 mb-8">
+    <div className="bg-white rounded-2xl shadow-md p-6 mb-8 sa">
       <h2 className="text-lg font-bold text-gray-800 mb-5">Most Booked Resources</h2>
       <div className="flex flex-col gap-3">
         {sorted.map(([name, count], i) => (
@@ -137,7 +137,7 @@ const AdminDashboard = ({ resources, bookings, memberCount }) => {
       <BookingChart bookings={bookings} />
 
       {/* Feature cards */}
-      <div className="bg-white rounded-2xl shadow-md p-6 mb-8">
+      <div className="bg-white rounded-2xl shadow-md p-6 mb-8 sa">
         <h2 className="text-lg font-bold text-gray-800 mb-4">Quick Access</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
           <FeatureCard icon={Boxes}         iconBg="linear-gradient(135deg,#f093fb,#f5576c)" title="Resources"       btnLabel="Open" btnTo="/resources"        btnColor="#FF8C42" />
@@ -151,7 +151,7 @@ const AdminDashboard = ({ resources, bookings, memberCount }) => {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Recent Resources */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="bg-white rounded-2xl shadow-md p-6 sa">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-bold text-gray-800">Recent Resources</h2>
             <ViewAllBtn to="/resources" />
@@ -184,7 +184,7 @@ const AdminDashboard = ({ resources, bookings, memberCount }) => {
         </div>
 
         {/* Booking History */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="bg-white rounded-2xl shadow-md p-6 sa">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-bold text-gray-800">Booking History</h2>
             <ViewAllBtn to="/bookings/all" />
@@ -237,7 +237,7 @@ const ResidentDashboard = ({ resources, myBookings }) => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="flex flex-col gap-6">
           {/* Active Bookings */}
-          <div className="bg-white rounded-2xl shadow-md p-6">
+          <div className="bg-white rounded-2xl shadow-md p-6 sa">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-gray-800">My Bookings</h2>
               <ViewAllBtn to="/bookings/all" />
@@ -274,7 +274,7 @@ const ResidentDashboard = ({ resources, myBookings }) => {
           </div>
 
           {/* Booking History */}
-          <div className="bg-white rounded-2xl shadow-md p-6">
+          <div className="bg-white rounded-2xl shadow-md p-6 sa">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                 <History className="w-5 h-5 text-gray-400" /> Booking History
@@ -307,7 +307,7 @@ const ResidentDashboard = ({ resources, myBookings }) => {
         </div>
 
         {/* Available Resources */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="bg-white rounded-2xl shadow-md p-6 sa">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-lg font-bold text-gray-800">Available Resources</h2>
             <Link to="/resources" className="text-sm font-semibold text-white px-4 py-1.5 rounded-full hover:opacity-90 transition-all"

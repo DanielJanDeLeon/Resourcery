@@ -52,7 +52,7 @@ const Profile = () => {
       <div className="max-w-sm mx-auto space-y-5">
 
         {/* Account info card */}
-        <div className="bg-white rounded-2xl shadow-md p-6 space-y-4">
+        <div className="bg-white rounded-2xl shadow-md p-6 space-y-4 sa">
           <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wider">Account Info</h3>
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0"
@@ -71,7 +71,7 @@ const Profile = () => {
         </div>
 
         {/* Change password card */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="bg-white rounded-2xl shadow-md p-6 sa">
           <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
             <KeyRound className="w-4 h-4" /> Change Password
           </h3>

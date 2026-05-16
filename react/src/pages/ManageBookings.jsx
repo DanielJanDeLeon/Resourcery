@@ -4,21 +4,23 @@ import Layout from '../layout/Layout';
 import djangoApi from '../config/djangoApi';
 
 const STATUS_STYLES = {
-  pending:      'bg-amber-100 text-amber-700',
-  for_pickup:   'bg-orange-100 text-orange-700',
-  not_returned: 'bg-red-100 text-red-700',
-  returned:     'bg-green-100 text-green-700',
-  declined:     'bg-gray-100 text-gray-500',
-  cancelled:    'bg-gray-100 text-gray-500',
+  pending:          'bg-amber-100 text-amber-700',
+  for_pickup:       'bg-orange-100 text-orange-700',
+  not_returned:     'bg-red-100 text-red-700',
+  under_inspection: 'bg-blue-100 text-blue-700',
+  returned:         'bg-green-100 text-green-700',
+  declined:         'bg-gray-100 text-gray-500',
+  cancelled:        'bg-gray-100 text-gray-500',
 };
 
 const STATUS_LABELS = {
-  pending:      'Pending',
-  for_pickup:   'For Pick Up',
-  not_returned: 'Not Returned',
-  returned:     'Returned',
-  declined:     'Declined',
-  cancelled:    'Cancelled',
+  pending:          'Pending',
+  for_pickup:       'For Pick Up',
+  not_returned:     'Not Returned',
+  under_inspection: 'Under Inspection',
+  returned:         'Returned',
+  declined:         'Declined',
+  cancelled:        'Cancelled',
 };
 
 const to12h = (t) => {
@@ -30,23 +32,50 @@ const to12h = (t) => {
 };
 
 // ── Damage Report Modal ───────────────────────────────────────────────────────
+const SEVERITY = [
+  { value: 'minor',    label: 'Minor',    color: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
+  { value: 'moderate', label: 'Moderate', color: 'bg-orange-100 text-orange-700 border-orange-300' },
+  { value: 'severe',   label: 'Severe',   color: 'bg-red-100 text-red-700 border-red-300' },
+];
+
 const DamageReportModal = ({ booking, onClose, onSubmitted }) => {
-  const [description, setDescription] = useState('');
-  const [severity, setSeverity] = useState('minor');
+  const qty = booking.quantity_requested || 1;
+
+  // Each entry = { severity, description }
+  const [entries, setEntries] = useState([{ severity: 'minor', description: '' }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const updateEntry = (i, field, val) =>
+    setEntries(prev => prev.map((e, idx) => idx === i ? { ...e, [field]: val } : e));
+
+  const addEntry = () => {
+    if (entries.length < qty) setEntries(prev => [...prev, { severity: 'minor', description: '' }]);
+  };
+
+  const removeEntry = (i) => {
+    if (entries.length > 1) setEntries(prev => prev.filter((_, idx) => idx !== i));
+  };
+
   const submit = async (e) => {
     e.preventDefault();
+    if (entries.some(en => !en.description.trim())) {
+      setError('All entries must have a description.'); return;
+    }
     setLoading(true); setError('');
     try {
-      await djangoApi.post('/damage-reports/create', {
-        booking_id: booking.id,
-        resource_name: booking.resource_name,
-        username: booking.username,
-        description,
-        severity,
-      });
+      // Submit one report per entry (each damaged item separately)
+      await Promise.all(entries.map(en =>
+        djangoApi.post('/damage-reports/create', {
+          booking_id: booking.id,
+          resource_id: booking.resource_id,
+          resource_name: booking.resource_name,
+          username: booking.username,
+          description: en.description,
+          severity: en.severity,
+          quantity_damaged: 1,
+        })
+      ));
       onSubmitted();
       onClose();
     } catch (err) {
@@ -54,50 +83,74 @@ const DamageReportModal = ({ booking, onClose, onSubmitted }) => {
     } finally { setLoading(false); }
   };
 
-  const SEVERITY = [
-    { value: 'minor',    label: 'Minor',    color: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
-    { value: 'moderate', label: 'Moderate', color: 'bg-orange-100 text-orange-700 border-orange-300' },
-    { value: 'severe',   label: 'Severe',   color: 'bg-red-100 text-red-700 border-red-300' },
-  ];
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
           <div>
             <h2 className="font-bold text-gray-800">File Damage Report</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{booking.resource_name} · {booking.username}</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {booking.resource_name} · {booking.username}
+              {qty > 1 && <span className="ml-1 text-purple-600 font-semibold">· {qty} items booked</span>}
+            </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
         </div>
-        <form onSubmit={submit} className="px-6 py-5 space-y-4">
-          {error && <p className="text-red-500 text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Severity</label>
-            <div className="flex gap-2">
-              {SEVERITY.map(s => (
-                <button key={s.value} type="button"
-                  onClick={() => setSeverity(s.value)}
-                  className={`flex-1 py-2 text-xs font-semibold rounded-xl border-2 transition-all ${severity === s.value ? s.color + ' border-current' : 'border-gray-200 text-gray-500 bg-gray-50'}`}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
+
+        <form onSubmit={submit} style={{ overflowY: 'auto', flex: 1 }}>
+          <div className="px-6 py-5 space-y-4">
+            {error && <p className="text-red-500 text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+
+            {entries.map((entry, i) => (
+              <div key={i} className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    {qty > 1 ? `Item ${i + 1}` : 'Damaged Item'}
+                  </span>
+                  {entries.length > 1 && (
+                    <button type="button" onClick={() => removeEntry(i)}
+                      className="text-red-400 hover:text-red-600 transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Severity</label>
+                  <div className="flex gap-2">
+                    {SEVERITY.map(s => (
+                      <button key={s.value} type="button"
+                        onClick={() => updateEntry(i, 'severity', s.value)}
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${entry.severity === s.value ? s.color + ' border-current' : 'border-gray-200 text-gray-500 bg-white'}`}>
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Description</label>
+                  <textarea value={entry.description} onChange={e => updateEntry(i, 'description', e.target.value)}
+                    required rows={2} placeholder="Describe the damage…"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white resize-none" />
+                </div>
+              </div>
+            ))}
+
+            {qty > 1 && entries.length < qty && (
+              <button type="button" onClick={addEntry}
+                className="w-full py-2 text-xs font-semibold border-2 border-dashed border-purple-300 text-purple-600 rounded-xl hover:bg-purple-50 transition-all">
+                + Add another damaged item ({entries.length}/{qty})
+              </button>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={3}
-              placeholder="Describe the damage…"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 bg-gray-50 resize-none" />
-          </div>
-          <div className="flex gap-2">
+
+          <div className="px-6 pb-5 flex gap-2 flex-shrink-0">
             <button type="button" onClick={onClose}
               className="flex-1 py-2.5 text-sm border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-all">
               Cancel
             </button>
             <button type="submit" disabled={loading}
               className="flex-1 py-2.5 text-sm text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 transition-all bg-red-500">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit Report'}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : `Submit ${entries.length > 1 ? `${entries.length} Reports` : 'Report'}`}
             </button>
           </div>
         </form>
@@ -133,6 +186,11 @@ const BookingRow = ({ booking, onStatusChange, onDamageReport }) => {
             · {to12h(booking.time)}–{to12h(booking.end_time)}
           </span>
         )}
+        {(booking.is_extension || booking.is_update) && booking.original_return_date && booking.status === 'pending' && (
+          <div className="text-xs text-gray-400 mt-0.5 line-through">
+            was: {booking.date} – {booking.original_return_date}
+          </div>
+        )}
       </td>
       <td className="px-6 py-4 text-gray-600 text-sm">
         {booking.quantity_requested > 1 ? (
@@ -159,7 +217,7 @@ const BookingRow = ({ booking, onStatusChange, onDamageReport }) => {
       <td className="px-6 py-4">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2 flex-wrap">
-            {/* pending → approve (for_pickup) or decline */}
+            {/* pending → approve or decline */}
             {booking.status === 'pending' && (
               <>
                 <button onClick={() => update('for_pickup')} disabled={updating}
@@ -172,19 +230,26 @@ const BookingRow = ({ booking, onStatusChange, onDamageReport }) => {
                 </button>
               </>
             )}
-            {/* for_pickup → picked up (not_returned) */}
+            {/* for_pickup → picked up */}
             {booking.status === 'for_pickup' && (
               <button onClick={() => update('not_returned')} disabled={updating}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-all disabled:opacity-50">
                 <Package className="w-3.5 h-3.5" /> Mark as Picked Up
               </button>
             )}
-            {/* not_returned → returned */}
+            {/* not_returned → under inspection (via Returned button) */}
             {booking.status === 'not_returned' && (
+              <button onClick={() => update('under_inspection')} disabled={updating}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-all disabled:opacity-50">
+                <RotateCcw className="w-3.5 h-3.5" /> Returned
+              </button>
+            )}
+            {/* under_inspection → no damage (returned) or report damage */}
+            {booking.status === 'under_inspection' && (
               <>
                 <button onClick={() => update('returned')} disabled={updating}
                   className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-all disabled:opacity-50">
-                  <RotateCcw className="w-3.5 h-3.5" /> Returned
+                  <CheckCircle className="w-3.5 h-3.5" /> No Damage
                 </button>
                 <button onClick={() => onDamageReport(booking)}
                   className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-all">
@@ -219,7 +284,7 @@ const ManageBookings = () => {
     setBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
   };
 
-  const active = bookings.filter(b => ['pending', 'for_pickup', 'not_returned'].includes(b.status));
+  const active = bookings.filter(b => ['pending', 'for_pickup', 'not_returned', 'under_inspection'].includes(b.status));
 
   return (
     <>
@@ -233,7 +298,7 @@ const ManageBookings = () => {
         <div className="p-5 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm">{error}</div>
       )}
       {!loading && !error && (
-        <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-md overflow-hidden sa">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="font-bold text-gray-800">Active Bookings</h2>
             <span className="text-xs font-semibold bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full">

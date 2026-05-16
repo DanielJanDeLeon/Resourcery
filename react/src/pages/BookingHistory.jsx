@@ -71,7 +71,7 @@ const BookingHistory = () => {
       )}
       {!loading && !error && (
         <>
-          <div className="flex gap-3 mb-5 flex-wrap">
+          <div className="flex gap-3 mb-5 flex-wrap sa">
             <div className="relative flex-1 min-w-48">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input type="text" placeholder="Search resource or member..."
@@ -94,7 +94,7 @@ const BookingHistory = () => {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-md overflow-hidden sa">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
               <History className="w-4 h-4 text-gray-400" />
               <h2 className="font-bold text-gray-800">History</h2>

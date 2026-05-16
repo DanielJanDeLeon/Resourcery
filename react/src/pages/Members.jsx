@@ -120,7 +120,7 @@ const Members = () => {
     <>
       <Layout title="Members" subtitle="All registered users in the system">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-white font-semibold text-lg">All Members ({filtered.length})</h2>
+        <h2 className="text-gray-800 font-semibold text-lg">All Members ({filtered.length})</h2>
         {isAdmin && (
           <Link to="/members/add"
             className="px-4 py-2 text-sm text-white font-semibold rounded-full hover:opacity-90 transition-all"
@@ -137,7 +137,7 @@ const Members = () => {
           className="w-full pl-11 pr-4 py-3 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 shadow-sm" />
       </div>
 
-      <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-md overflow-hidden sa">
         {loading ? (
           <div className="flex items-center justify-center py-16 text-gray-400 gap-2">
             <Loader2 className="w-5 h-5 animate-spin" /> Loading…

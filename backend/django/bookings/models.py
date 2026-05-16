@@ -3,13 +3,14 @@ from django.db import models
 
 class Booking(models.Model):
     STATUS_CHOICES = [
-        ('pending',     'Pending'),
-        ('for_pickup',  'For Pick Up'),
-        ('not_returned','Not Returned'),
-        ('returned',    'Returned'),
-        ('declined',    'Declined'),
-        ('cancelled',   'Cancelled'),
-        ('no_pickup',   'No Pick Up'),
+        ('pending',          'Pending'),
+        ('for_pickup',       'For Pick Up'),
+        ('not_returned',     'Not Returned'),
+        ('under_inspection', 'Under Inspection'),
+        ('returned',         'Returned'),
+        ('declined',         'Declined'),
+        ('cancelled',        'Cancelled'),
+        ('no_pickup',        'No Pick Up'),
     ]
 
     username = models.CharField(max_length=150)
@@ -42,13 +43,18 @@ class DamageReport(models.Model):
         ('severe',   'Severe'),
     ]
 
-    booking_id    = models.IntegerField()
-    resource_name = models.CharField(max_length=100)
-    username      = models.CharField(max_length=150)
-    description   = models.TextField()
-    severity      = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='minor')
-    reported_by   = models.CharField(max_length=150)
-    created_at    = models.DateTimeField(auto_now_add=True)
+    booking_id      = models.IntegerField()
+    resource_id     = models.IntegerField(default=0)
+    resource_name   = models.CharField(max_length=100)
+    username        = models.CharField(max_length=150)
+    description     = models.TextField()
+    severity        = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='minor')
+    reported_by     = models.CharField(max_length=150)
+    quantity_damaged = models.IntegerField(default=1)
+    resolved        = models.BooleanField(default=False)
+    resolved_at     = models.DateTimeField(null=True, blank=True)
+    resolved_by     = models.CharField(max_length=150, blank=True, default='')
+    created_at      = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'damage_reports'
@@ -84,3 +90,27 @@ class Notification(models.Model):
     class Meta:
         db_table = 'notifications'
         ordering = ['-created_at']
+
+
+class TermsAndConditions(models.Model):
+    content = models.JSONField(default=list)  # list of {title, body}
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.CharField(max_length=150, default='admin')
+
+    class Meta:
+        db_table = 'terms_and_conditions'
+
+    def __str__(self):
+        return f"Terms (updated {self.updated_at})"
+
+
+class PrivacyPolicy(models.Model):
+    content = models.JSONField(default=list)  # list of {title, body}
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.CharField(max_length=150, default='admin')
+
+    class Meta:
+        db_table = 'privacy_policy'
+
+    def __str__(self):
+        return f"Privacy Policy (updated {self.updated_at})"

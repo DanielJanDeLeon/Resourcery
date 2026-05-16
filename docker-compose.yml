@@ -35,6 +35,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=password
       - JWT_SECRET=Zm9ydHktdHdvLWlzLXRoZS1hbnN3ZXItdG8tbGlmZS10aGUtdW5pdmVyc2UtYW5kLWV2ZXJ5dGhpbmc=
       - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - GOOGLE_CLIENT_ID=831686709531-tc6anolbilrjcksfk4oukecjc0ekje3g.apps.googleusercontent.com
     volumes:
       - ./backend/sb:/app
       - ~/.m2:/root/.m2
@@ -103,6 +104,7 @@ services:
       - VITE_API_BASE_URL=http://localhost:8080
       - VITE_PHP_API_URL=http://localhost:8081
       - VITE_DJANGO_API_URL=http://localhost:8082
+      - VITE_GOOGLE_CLIENT_ID=831686709531-tc6anolbilrjcksfk4oukecjc0ekje3g.apps.googleusercontent.com
       - CHOKIDAR_USEPOLLING=true
     volumes:
       - ./react:/app

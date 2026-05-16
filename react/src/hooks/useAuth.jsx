@@ -36,12 +36,23 @@ export const AuthProvider = ({ children }) => {
         navigate('/dashboard');
     }, [navigate]);
 
+    const googleLogin = useCallback(async (idToken) => {
+        const { data } = await api.post('/api/auth/google', { idToken });
+        setUser(data);
+        navigate('/dashboard');
+    }, [navigate]);
+
+    const googleCheck = useCallback(async (idToken) => {
+        const { data } = await api.post('/api/auth/google/check', { idToken });
+        return data; // { isNewUser: boolean }
+    }, []);
+
     const logout = useCallback(async () => {
         try {
             await api.post('/api/auth/logout');
         } finally {
             setUser(null);
-            navigate('/login');
+            navigate('/');
         }
     }, [navigate]);
 
@@ -53,6 +64,8 @@ export const AuthProvider = ({ children }) => {
             isLoading,
             login,
             register,
+            googleLogin,
+            googleCheck,
             logout,
         }}>
             {children}

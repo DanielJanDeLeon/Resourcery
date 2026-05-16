@@ -41,7 +41,9 @@ const BookModal = ({ resource, onClose }) => {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [multiDay, setMultiDay] = useState(false);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState('1');
+  const [quantityError, setQuantityError] = useState('');
+  const [availableQty, setAvailableQty] = useState(resource.quantity || 1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [extensionData, setExtensionData] = useState(null);
@@ -51,6 +53,27 @@ const BookModal = ({ resource, onClose }) => {
   const dateRange = isVenue && !multiDay
     ? (date ? fmt(date) : '')
     : (date && returnDate ? `${fmt(date)} – ${fmt(returnDate)}` : date ? fmt(date) : '');
+
+  // Fetch available quantity when dates are selected
+  React.useEffect(() => {
+    if (!date || resource.quantity <= 1) {
+      setAvailableQty(resource.quantity || 1);
+      return;
+    }
+    djangoApi.get('/bookings/availability', {
+      params: { resource_id: resource.id, date, return_date: returnDate || date }
+    }).then(({ data }) => {
+      const avail = data.available ?? resource.quantity;
+      setAvailableQty(avail);
+      // Only clamp down if something is actually booked for these dates
+      const current = parseInt(quantity) || 1;
+      if (current > avail) {
+        setQuantity(String(Math.max(1, avail)));
+      }
+    }).catch(() => {
+      setAvailableQty(resource.quantity || 1);
+    });
+  }, [date, returnDate]);
 
   const timeRange = isVenue && !multiDay && startTime && endTime
     ? `${startTime} – ${endTime}`
@@ -66,7 +89,7 @@ const BookModal = ({ resource, onClose }) => {
         date,
         return_date: (isVenue && !multiDay) ? null : (returnDate || null),
         time: (isVenue && !multiDay && startTime) ? startTime : '00:00',
-        quantity_requested: quantity,
+        quantity_requested: parseInt(quantity) || 1,
       };
       const res = await djangoApi.post('/bookings', payload);
       setSuccess(res.data?.merged ? 'merged' : 'booked');
@@ -229,11 +252,28 @@ const BookModal = ({ resource, onClose }) => {
               {!isVenue && resource.quantity > 1 && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quantity <span className="text-gray-400 text-xs">(max {resource.quantity})</span>
+                    Quantity{' '}
+                    {date && <span className={`text-xs font-semibold ${availableQty === 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                      ({availableQty} available for selected dates)
+                    </span>}
                   </label>
-                  <input type="number" value={quantity} min={1} max={resource.quantity}
-                    onChange={e => setQuantity(Math.min(resource.quantity, Math.max(1, parseInt(e.target.value) || 1)))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 bg-gray-50" />
+                  <input
+                    type="number"
+                    value={quantity}
+                    min={1}
+                    max={availableQty}
+                    step={1}
+                    onChange={e => {
+                      const raw = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 1;
+                      const max = availableQty > 0 ? availableQty : 1;
+                      // Clamp to max available — never let user exceed it
+                      const clamped = Math.min(raw, max);
+                      setQuantity(String(clamped));
+                      setQuantityError('');
+                    }}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 bg-gray-50"
+                  />
+                  {quantityError && <p className="text-xs text-red-500 mt-1">{quantityError}</p>}
                 </div>
               )}
 
@@ -242,7 +282,17 @@ const BookModal = ({ resource, onClose }) => {
                   className="flex-1 py-2.5 text-sm border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition-all">
                   Cancel
                 </button>
-                <button type="button" disabled={!date || (isVenue && !multiDay && (!startTime || !endTime))} onClick={() => setStep(2)}
+                <button type="button"
+                  disabled={!date || (isVenue && !multiDay && (!startTime || !endTime))}
+                  onClick={() => {
+                    if (resource.quantity > 1 && !isVenue) {
+                      const qty = parseInt(quantity);
+                      if (!qty || qty <= 0) { setQuantityError('Quantity must be at least 1.'); return; }
+                      if (availableQty === 0 && date) { setQuantityError('No units available for the selected dates.'); return; }
+                      if (qty > availableQty) { setQuantityError(`Only ${availableQty} unit${availableQty !== 1 ? 's' : ''} available.`); return; }
+                    }
+                    setStep(2);
+                  }}
                   className="flex-1 py-2.5 text-sm text-white rounded-xl font-semibold hover:opacity-90 disabled:opacity-40 transition-all"
                   style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
                   Next →
@@ -465,12 +515,12 @@ const STATUS_STYLES = {
 };
 
 // ── Resource Card ─────────────────────────────────────────────────────────────
-const ResourceCard = ({ resource, bookings = [], isAdmin, onBook, onEdit, onDelete }) => {
+const ResourceCard = ({ resource, bookings = [], isAdmin, onBook, onEdit, onDelete, staggerClass = '' }) => {
   const { Icon, color } = getTypeInfo(resource.type);
   const s = STATUS_STYLES[resource.status] || STATUS_STYLES.available;
 
   return (
-    <div className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col">
+    <div className={`sa ${staggerClass} bg-white rounded-2xl shadow-md overflow-hidden flex flex-col hover-lift`}>
       <div className="h-1.5 w-full" style={{ background: color }} />
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-start justify-between">
@@ -486,7 +536,16 @@ const ResourceCard = ({ resource, bookings = [], isAdmin, onBook, onEdit, onDele
             <p className="text-xs text-gray-500 mt-1 leading-relaxed">{resource.description}</p>
           )}
           {resource.quantity > 1 && (
-            <p className="text-xs text-gray-400 mt-1">Available qty: <span className="font-semibold text-gray-600">{resource.quantity}</span></p>
+            <p className="text-xs text-gray-400 mt-1">
+              Total qty: <span className="font-semibold text-gray-600">{resource.quantity}</span>
+              {bookings.length > 0 && (
+                <span className="ml-1">
+                  · Available: <span className="font-semibold text-green-600">
+                    {Math.max(0, resource.quantity - bookings.reduce((sum, b) => sum + (b.quantity_requested || 1), 0))}
+                  </span>
+                </span>
+              )}
+            </p>
           )}
         </div>
         {bookings.length > 0 && (
@@ -609,8 +668,8 @@ const Resources = () => {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-white font-semibold text-lg">All Resources ({filtered.length})</h2>
+      <div className="flex items-center justify-between mb-5 sa">
+        <h2 className="text-gray-800 font-semibold text-lg">All Resources ({filtered.length})</h2>
         {isAdmin && (
           <Link to="/resources/add"
             className="flex items-center gap-2 px-4 py-2 text-sm text-white font-semibold rounded-full hover:opacity-90 transition-all"
@@ -620,7 +679,7 @@ const Resources = () => {
         )}
       </div>
 
-      <div className="relative mb-6">
+      <div className="relative mb-6 sa">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input type="text" placeholder="Search resources by name or type..."
           value={search} onChange={e => setSearch(e.target.value)}
@@ -635,9 +694,10 @@ const Resources = () => {
         <div className="bg-white rounded-2xl shadow-md p-8 text-center text-gray-400">No resources found.</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filtered.map(r => (
+          {filtered.map((r, idx) => (
             <ResourceCard key={r.id} resource={r} bookings={bookingMap[r.id] || []}
-              isAdmin={isAdmin} onBook={setBookTarget} onEdit={setEditTarget} onDelete={setDeleteTarget} />
+              isAdmin={isAdmin} onBook={setBookTarget} onEdit={setEditTarget} onDelete={setDeleteTarget}
+              staggerClass={`sa-d${(idx % 4) + 1}`} />
           ))}
         </div>
       )}

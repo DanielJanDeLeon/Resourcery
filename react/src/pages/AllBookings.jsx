@@ -5,26 +5,28 @@ import djangoApi from '../config/djangoApi';
 import { useAuth } from '../hooks/useAuth';
 
 const STATUS = {
-  pending:      'bg-amber-100 text-amber-700',
-  for_pickup:   'bg-orange-100 text-orange-700',
-  not_returned: 'bg-red-100 text-red-700',
-  declined:     'bg-red-100 text-red-700',
-  returned:     'bg-green-100 text-green-700',
-  cancelled:    'bg-gray-100 text-gray-500',
-  no_pickup:    'bg-red-100 text-red-700',
+  pending:          'bg-amber-100 text-amber-700',
+  for_pickup:       'bg-orange-100 text-orange-700',
+  not_returned:     'bg-red-100 text-red-700',
+  under_inspection: 'bg-blue-100 text-blue-700',
+  declined:         'bg-red-100 text-red-700',
+  returned:         'bg-green-100 text-green-700',
+  cancelled:        'bg-gray-100 text-gray-500',
+  no_pickup:        'bg-red-100 text-red-700',
 };
 
 const statusLabel = (s) => ({
-  pending:      'Pending',
-  for_pickup:   'For Pick Up',
-  not_returned: 'Not Returned',
-  declined:     'Declined',
-  returned:     'Returned',
-  cancelled:    'Cancelled',
-  no_pickup:    'No Pick Up',
+  pending:          'Pending',
+  for_pickup:       'For Pick Up',
+  not_returned:     'Not Returned',
+  under_inspection: 'Under Inspection',
+  declined:         'Declined',
+  returned:         'Returned',
+  cancelled:        'Cancelled',
+  no_pickup:        'No Pick Up',
 }[s] || s);
 
-const ACTIVE_STATUSES  = ['pending', 'for_pickup', 'not_returned'];
+const ACTIVE_STATUSES  = ['pending', 'for_pickup', 'not_returned', 'under_inspection'];
 const HISTORY_STATUSES = ['declined', 'returned', 'cancelled', 'no_pickup'];
 
 const fmt = (d) => d ? new Date(d + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
@@ -223,7 +225,7 @@ const AllBookings = () => {
       )}
       {!loading && !error && (
         <div className="flex flex-col gap-6">
-          <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-md overflow-hidden sa">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-bold text-gray-800">Active Bookings</h2>
               <span className="text-xs font-semibold bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full">
@@ -240,7 +242,7 @@ const AllBookings = () => {
             />
           </div>
 
-          <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-md overflow-hidden sa">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-bold text-gray-800">Booking History</h2>
               <div className="flex items-center gap-2">

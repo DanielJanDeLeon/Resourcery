@@ -4,13 +4,15 @@ from .views import (
     AdminBookingUpdateView, ResourceBookingsView, AdminDeleteUserBookingsView,
     BookingExtendView, BookingCancelView, BookingCancelExtensionView,
     NotificationListView, NotificationMarkReadView, NotificationClearView,
-    DamageReportCreateView, DamageReportListView,
+    DamageReportCreateView, DamageReportListView, DamageReportResolveView,
+    ResourceAvailabilityView, TermsView, PrivacyView,
 )
 
 urlpatterns = [
     path('bookings', BookingCreateView.as_view()),
     path('bookings/my', MyBookingsView.as_view()),
     path('bookings/resources', ResourceBookingsView.as_view()),
+    path('bookings/availability', ResourceAvailabilityView.as_view()),
     path('bookings/all', AdminBookingsView.as_view()),
     path('bookings/user/<str:username>', AdminDeleteUserBookingsView.as_view()),
     path('bookings/<int:booking_id>/extend', BookingExtendView.as_view()),
@@ -22,4 +24,7 @@ urlpatterns = [
     path('notifications/clear', NotificationClearView.as_view()),
     path('damage-reports', DamageReportListView.as_view()),
     path('damage-reports/create', DamageReportCreateView.as_view()),
+    path('damage-reports/<int:report_id>/resolve', DamageReportResolveView.as_view()),
+    path('terms', TermsView.as_view()),
+    path('privacy', PrivacyView.as_view()),
 ]

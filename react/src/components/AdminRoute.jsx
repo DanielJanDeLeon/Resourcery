@@ -13,7 +13,7 @@ const AdminRoute = ({ children }) => {
         );
     }
 
-    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    if (!isAuthenticated) return <Navigate to="/" replace />;
     if (!isAdmin) return <Navigate to="/dashboard" state={{ forbidden: true }} replace />;
 
     return children;

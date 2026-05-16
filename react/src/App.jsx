@@ -13,6 +13,13 @@ import AddMember from './pages/AddMember';
 import AddResource from './pages/AddResource';
 import Profile from './pages/Profile';
 import DamageReports from './pages/DamageReports';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+import TermsView from './pages/TermsView';
+import PrivacyView from './pages/PrivacyView';
+import TermsOfUse from './pages/TermsOfUse';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Landing from './pages/Landing';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import GuestRoute from './components/GuestRoute';
@@ -20,13 +27,14 @@ import { AuthProvider } from './hooks/useAuth';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-
+          <Route path="/" element={<Landing />} />
           <Route path="/login"    element={<GuestRoute><Login /></GuestRoute>} />
           <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+          <Route path="/terms-of-use" element={<TermsOfUse />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
 
           <Route path="/dashboard"    element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/resources"    element={<ProtectedRoute><Resources /></ProtectedRoute>} />
@@ -38,6 +46,10 @@ function App() {
           <Route path="/bookings/manage"  element={<AdminRoute><ManageBookings /></AdminRoute>} />
           <Route path="/bookings/history" element={<AdminRoute><BookingHistory /></AdminRoute>} />
           <Route path="/damage-reports"   element={<ProtectedRoute><DamageReports /></ProtectedRoute>} />
+          <Route path="/terms"            element={<AdminRoute><Terms /></AdminRoute>} />
+          <Route path="/terms-view"       element={<ProtectedRoute><TermsView /></ProtectedRoute>} />
+          <Route path="/privacy-admin"    element={<AdminRoute><Privacy /></AdminRoute>} />
+          <Route path="/privacy-view"     element={<ProtectedRoute><PrivacyView /></ProtectedRoute>} />
           <Route path="/members/add"     element={<AdminRoute><AddMember /></AdminRoute>} />
           <Route path="/resources/add"   element={<AdminRoute><AddResource /></AdminRoute>} />
         </Routes>

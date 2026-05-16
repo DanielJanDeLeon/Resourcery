@@ -34,7 +34,7 @@ const UserBookingHistory = () => {
         <div className="p-5 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm">{error}</div>
       )}
       {!loading && !error && (
-        <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-md overflow-hidden sa">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
             <History className="w-4 h-4 text-gray-400" />
             <h2 className="font-bold text-gray-800">Booking History</h2>

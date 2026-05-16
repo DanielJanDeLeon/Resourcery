@@ -19,6 +19,9 @@ public class User {
     private String role;
     private String email;
 
+    @jakarta.persistence.Column(name = "google_id")
+    private String googleId;
+
     public User() {}
 
     public User(String username, String password, String role) {
@@ -41,4 +44,7 @@ public class User {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getGoogleId() { return googleId; }
+    public void setGoogleId(String googleId) { this.googleId = googleId; }
 }
